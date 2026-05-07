@@ -1,0 +1,70 @@
+version: 2
+
+models:
+  - name: transactions_attributed
+    description: "Celo transactions enriched with builder-code attribution parsed from the calldata trailer."
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - hash
+    columns:
+      - name: block_time
+        description: "Timestamp of the block containing the transaction."
+        data_tests:
+          - not_null
+      - name: block_date
+        description: "Date of the block containing the transaction."
+        data_tests:
+          - not_null
+      - name: block_number
+        description: "Block height containing the transaction."
+        data_tests:
+          - not_null
+      - name: hash
+        description: "Transaction hash. Unique key for this model."
+        data_tests:
+          - not_null
+          - unique
+      - name: value
+        description: "Native CELO value transferred in the transaction (wei)."
+      - name: gas_limit
+        description: "Maximum gas the sender was willing to consume."
+      - name: gas_price
+        description: "Effective gas price paid (legacy or post-1559 effective price)."
+      - name: gas_used
+        description: "Gas actually consumed by the transaction."
+      - name: max_fee_per_gas
+        description: "EIP-1559 max fee per gas the sender was willing to pay."
+      - name: max_priority_fee_per_gas
+        description: "EIP-1559 max priority fee per gas (tip to validator)."
+      - name: priority_fee_per_gas
+        description: "Effective priority fee per gas paid."
+      - name: nonce
+        description: "Sender account nonce at time of transaction."
+      - name: index
+        description: "Position of the transaction within its block."
+      - name: success
+        description: "Whether the transaction executed successfully."
+      - name: from
+        description: "Sender address."
+        data_tests:
+          - not_null
+      - name: to
+        description: "Recipient address (null for contract creation)."
+      - name: block_hash
+        description: "Hash of the block containing the transaction."
+      - name: type
+        description: "Transaction type (legacy, EIP-1559, EIP-2930, etc.)."
+      - name: access_list
+        description: "EIP-2930 access list, if provided."
+      - name: chain_id
+        description: "Chain identifier (Celo mainnet)."
+      - name: fee_currency
+        description: "Address of the ERC-20 token used to pay gas, if not native CELO."
+      - name: has_builder_code
+        description: "True when the calldata trailer matches the attribution marker, schema id 0x00, valid code length, and the calldata is long enough to contain the encoded code."
+        data_tests:
+          - not_null
+      - name: builder_code
+        description: "UTF-8 decoded builder attribution code extracted from the calldata trailer when has_builder_code is true; NULL otherwise."

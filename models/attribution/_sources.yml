@@ -1,0 +1,9 @@
+version: 2
+
+sources:
+  - name: celo
+    database: dune
+    schema: celo
+    tables:
+      - name: transactions
+        description: "Raw Celo transactions table"
