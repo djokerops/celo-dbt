@@ -46,7 +46,7 @@ models:
         description: "Position of the transaction within its block."
       - name: success
         description: "Whether the transaction executed successfully."
-      - name: from
+      - name: "from"
         description: "Sender address."
         data_tests:
           - not_null
