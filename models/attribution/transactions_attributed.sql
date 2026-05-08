@@ -39,6 +39,7 @@ WITH raw AS (
      AND block_time >= timestamp '2026-04-30 23:22:42'
    {% if is_incremental() %}
      AND block_date >= current_date - interval '1' day
+     AND block_time >= now() - interval '2' hour
    {% endif %}
  ), 
 
