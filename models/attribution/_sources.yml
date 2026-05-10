@@ -7,3 +7,10 @@ sources:
     tables:
       - name: transactions
         description: "Raw Celo transactions table"
+
+  - name: tokens
+    database: dune
+    schema: tokens
+    tables:
+      - name: transfers
+        description: "Curated multi-chain ERC-20 / ERC-721 / native token transfers with USD pricing. Filter by blockchain = 'celo' for Celo-only data."

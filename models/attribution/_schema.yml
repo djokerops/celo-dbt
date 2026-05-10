@@ -68,3 +68,75 @@ models:
           - not_null
       - name: builder_code
         description: "UTF-8 decoded builder attribution code extracted from the calldata trailer when has_builder_code is true; NULL otherwise."
+
+  - name: transfers_attributed
+    description: "Celo token transfers from tokens.transfers, left-joined to transactions_attributed to attach builder-code attribution at the transfer grain. One row per transfer event; transfers whose parent transaction has no attribution carry has_builder_code = false and builder_code = NULL."
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - unique_key
+    columns:
+      - name: unique_key
+        description: "Surrogate key uniquely identifying a transfer event. Unique key for this model."
+        data_tests:
+          - not_null
+          - unique
+      - name: blockchain
+        description: "Chain of the transfer. Always 'celo' in this model."
+        data_tests:
+          - not_null
+      - name: block_month
+        description: "Month of the block containing the transfer."
+      - name: block_date
+        description: "Date of the block containing the transfer."
+        data_tests:
+          - not_null
+      - name: block_time
+        description: "Timestamp of the block containing the transfer."
+        data_tests:
+          - not_null
+      - name: block_number
+        description: "Block height containing the transfer."
+        data_tests:
+          - not_null
+      - name: tx_hash
+        description: "Hash of the transaction that emitted the transfer. Join key against transactions_attributed.hash."
+        data_tests:
+          - not_null
+      - name: evt_index
+        description: "Log event index of the transfer within its transaction."
+      - name: trace_address
+        description: "Trace address path for internal/native transfers (NULL for log-based transfers)."
+      - name: token_standard
+        description: "Token standard of the transfer (e.g. erc20, erc721, native)."
+      - name: tx_from
+        description: "EOA or contract that originated the transaction."
+      - name: tx_to
+        description: "Direct recipient of the transaction (often the contract being called)."
+      - name: tx_index
+        description: "Position of the transaction within its block."
+      - name: '"from"'
+        description: "Sender of the transferred asset."
+      - name: '"to"'
+        description: "Receiver of the transferred asset."
+      - name: contract_address
+        description: "Token contract address (NULL for native CELO transfers)."
+      - name: symbol
+        description: "Token symbol."
+      - name: amount_raw
+        description: "Raw on-chain transfer amount (token base units)."
+      - name: amount
+        description: "Display amount, scaled by token decimals."
+      - name: price_usd
+        description: "USD price used to compute amount_usd at block_time."
+      - name: amount_usd
+        description: "USD value of the transfer (amount * price_usd)."
+      - name: _updated_at
+        description: "Timestamp when the source row was last written by Dune."
+      - name: has_builder_code
+        description: "True when the parent transaction's calldata trailer carried valid builder-code attribution. Defaults to false when no matching transaction is found in transactions_attributed."
+        data_tests:
+          - not_null
+      - name: builder_code
+        description: "UTF-8 decoded builder attribution code from the parent transaction; NULL when has_builder_code is false."
