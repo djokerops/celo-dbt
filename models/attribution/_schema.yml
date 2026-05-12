@@ -63,11 +63,15 @@ models:
       - name: fee_currency
         description: "Address of the ERC-20 token used to pay gas, if not native CELO."
       - name: has_builder_code
-        description: "True when the calldata trailer matches the attribution marker, schema id 0x00, valid code length, and the calldata is long enough to contain the encoded code."
+        description: "True when the calldata trailer matches the attribution marker, schema id 0x00, valid code length, and the calldata is long enough to contain the encoded code. Equivalent to multi_code IS NOT NULL."
         data_tests:
           - not_null
+      - name: multi_code
+        description: "Raw UTF-8 decoded attribution payload extracted from the calldata trailer. May be a single code (e.g. 'minipay') or comma-separated codes (e.g. 'minipay,celo_b057492a'). NULL when has_builder_code is false."
       - name: builder_code
-        description: "UTF-8 decoded builder attribution code extracted from the calldata trailer when has_builder_code is true; NULL otherwise."
+        description: "First comma-delimited segment of multi_code (e.g. 'minipay' from 'minipay,celo_b057492a'). Equal to multi_code when no comma is present. NULL when has_builder_code is false."
+      - name: builder_code2
+        description: "Second comma-delimited segment of multi_code (e.g. 'celo_b057492a' from 'minipay,celo_b057492a'). NULL when multi_code contains only a single code or has_builder_code is false."
 
   - name: transfers_attributed
     description: "Celo token transfers from tokens.transfers, left-joined to transactions_attributed to attach builder-code attribution at the transfer grain. One row per transfer event; transfers whose parent transaction has no attribution carry has_builder_code = false and builder_code = NULL."
@@ -138,5 +142,9 @@ models:
         description: "True when the parent transaction's calldata trailer carried valid builder-code attribution. Defaults to false when no matching transaction is found in transactions_attributed."
         data_tests:
           - not_null
+      - name: multi_code
+        description: "Raw UTF-8 attribution payload from the parent transaction (e.g. 'minipay' or 'minipay,celo_b057492a'). NULL when has_builder_code is false."
       - name: builder_code
-        description: "UTF-8 decoded builder attribution code from the parent transaction; NULL when has_builder_code is false."
+        description: "First comma-delimited segment of the parent transaction's multi_code (e.g. 'minipay'). NULL when has_builder_code is false."
+      - name: builder_code2
+        description: "Second comma-delimited segment of the parent transaction's multi_code (e.g. 'celo_b057492a'). NULL when multi_code contains only a single code or has_builder_code is false."

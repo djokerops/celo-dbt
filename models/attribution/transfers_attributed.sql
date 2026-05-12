@@ -7,7 +7,6 @@
   )
 }}
 
-
 WITH transfers AS (
   SELECT
     unique_key,
@@ -34,8 +33,8 @@ WITH transfers AS (
     _updated_at
   FROM {{ source('tokens', 'transfers') }}
   WHERE blockchain = 'celo'
-    AND block_date >= date('2026-04-30')
-    AND block_time >= timestamp '2026-04-30 23:22:42'
+    AND block_date >= date('2026-05-01')
+    AND block_time >= timestamp '2026-05-01 23:22:42'
   {% if is_incremental() %}
     AND block_date >= current_date - interval '1' day
     AND block_time >= now() - interval '2' hour
@@ -46,9 +45,11 @@ attributed AS (
   SELECT
     hash,
     has_builder_code,
-    builder_code
+    multi_code,
+    builder_code,
+    builder_code2
   FROM {{ ref('transactions_attributed') }}
-  WHERE block_date >= date('2026-04-30')
+  WHERE block_date >= date('2026-05-01')
   {% if is_incremental() %}
     AND block_date >= current_date - interval '1' day
     AND block_time >= now() - interval '2' hour
@@ -78,8 +79,9 @@ SELECT
     t.price_usd,
     t.amount_usd,
     t._updated_at,
-    COALESCE(a.has_builder_code, false) AS has_builder_code,
-    a.builder_code
+    COALESCE(a.has_builder_code, false)   AS has_builder_code,
+    a.multi_code,    
+    a.builder_code,                       
+    a.builder_code2                      
 FROM transfers AS t
-LEFT JOIN attributed AS a
-  ON t.tx_hash = a.hash
+LEFT JOIN attributed AS a ON t.tx_hash = a.hash
