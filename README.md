@@ -8,6 +8,7 @@ dbt project for Celo builder-code attribution. Reads from Dune's curated Celo ta
 | --- | --- | --- | --- |
 | [`transactions_attributed`](models/attribution/transactions_attributed.sql) | one row per transaction | `celo.transactions` | All Celo transactions with calldata long enough to carry an attribution payload (`varbinary_length(data) > 18`), with the builder code parsed out of the trailing bytes. |
 | [`transfers_attributed`](models/attribution/transfers_attributed.sql) | one row per transfer event | `tokens.transfers` (filtered to `blockchain = 'celo'`) LEFT JOIN `transactions_attributed` on `tx_hash` | Celo token transfers with builder-code attribution attached at the transfer grain, so analytics can roll up attribution across token activity. |
+| [`buildercode_daily_metric`](models/attribution/buildercode_daily_metric.sql) | one row per (day, builder_code) | `transfers_attributed` + `celo.transactions` + `prices.day` | Daily aggregates per builder: USD volume, transaction count, unique sender addresses, and chain fees paid (in USD, accounting for non-CELO gas tokens via fee_currency mapping). |
 
 ### How attribution is decoded
 
@@ -163,10 +164,11 @@ If you need true hourly cadence, you need an external scheduler (e.g. a small VM
 
 ```
 models/attribution/
-  transactions_attributed.sql    # parent model — parses calldata trailer
-  transfers_attributed.sql       # child model — joins transfers to attribution
-  _schema.yml                    # column docs + tests for both models
-  _sources.yml                   # celo.transactions, tokens.transfers
+  transactions_attributed.sql    # parent — parses calldata trailer
+  transfers_attributed.sql       # joins transfers to attribution
+  buildercode_daily_metric.sql   # daily aggregates per builder code
+  _schema.yml                    # column docs + tests for all models
+  _sources.yml                   # celo.transactions, tokens.transfers, prices.day
 macros/dune_dbt_overrides/       # schema naming, post-hooks (DO NOT modify)
 .github/workflows/               # CI/CD (see above)
 profiles.yml                     # Trino/Dune connection (reads env vars)

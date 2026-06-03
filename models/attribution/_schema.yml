@@ -148,3 +148,29 @@ models:
         description: "First comma-delimited segment of the parent transaction's multi_code (e.g. 'minipay'). NULL when has_builder_code is false."
       - name: builder_code2
         description: "Second comma-delimited segment of the parent transaction's multi_code (e.g. 'celo_b057492a'). NULL when multi_code contains only a single code or has_builder_code is false."
+
+  - name: buildercode_daily_metric
+    description: "Daily aggregated metrics per builder code: USD volume, transaction count, unique addresses, and chain fees paid. Built from transfers_attributed joined to celo.transactions for fee data and prices.day for fee-currency USD conversion. One row per (day, builder_code)."
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - day
+              - builder_code
+    columns:
+      - name: day
+        description: "Day bucket (DATE_TRUNC of block_time)."
+        data_tests:
+          - not_null
+      - name: builder_code
+        description: "Attribution code. Resolved as COALESCE(NULLIF(builder_code2, ''), builder_code) from transfers_attributed — i.e. the more specific code wins when a transaction carries a compound payload like 'minipay,celo_b057492a'."
+        data_tests:
+          - not_null
+      - name: volume_usd
+        description: "Sum of amount_usd across all attributed transfers in the day."
+      - name: tx_count
+        description: "Distinct transactions in the day that carried attribution and produced at least one transfer."
+      - name: unique_addresses
+        description: "Distinct sender addresses (from column on tokens.transfers) for the day."
+      - name: chain_fees_usd
+        description: "Total gas fees paid in USD across attributed transactions, computed as gas_used * gas_price * fee-currency-USD-price. fee_currency adapters for USDC (0x2f25…) and USDT (0x0e2a…) are mapped to their underlying token addresses for price lookup; NULL or zero-address fee_currency is priced as native CELO; any other fee_currency is priced directly against its own contract_address in prices.day. Zero when no matching price row exists for the day (e.g. unindexed token)."
