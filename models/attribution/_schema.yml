@@ -167,10 +167,12 @@ models:
         data_tests:
           - not_null
       - name: volume_usd
-        description: "Sum of amount_usd across all attributed transfers in the day."
+        description: "Sum of amount_usd across all attributed transfers in the day. Zero when the builder had attributed transactions but none produced a token transfer."
       - name: tx_count
-        description: "Distinct transactions in the day that carried attribution and produced at least one transfer."
+        description: "Distinct attributed transactions in the day for this builder, derived from transactions_attributed. Includes transactions that did not produce any token transfer (e.g. approve(), updateProfile, governance writes, reverts)."
+      - name: token_transfers_tx
+        description: "Distinct attributed transactions in the day that produced at least one row in tokens.transfers. Always ≤ tx_count; the difference is the number of attributed transactions that did not emit a Transfer event."
       - name: unique_addresses
-        description: "Distinct sender addresses (from column on tokens.transfers) for the day."
+        description: "Distinct sender addresses from the 'from' column of tokens.transfers for the day. Counted only across transactions that produced transfers (same population as token_transfers_tx)."
       - name: chain_fees_usd
-        description: "Total gas fees paid in USD across attributed transactions, computed as gas_used * gas_price * fee-currency-USD-price. fee_currency adapters for USDC (0x2f25…) and USDT (0x0e2a…) are mapped to their underlying token addresses for price lookup; NULL or zero-address fee_currency is priced as native CELO; any other fee_currency is priced directly against its own contract_address in prices.day. Zero when no matching price row exists for the day (e.g. unindexed token)."
+        description: "Total gas fees paid in USD across ALL attributed transactions for this builder on this day, regardless of whether the transaction produced a token transfer. Same scope as tx_count, so this is the true cost-per-builder metric (includes approves, reverts, governance writes, and other non-transfer interactions). Computed as gas_used * gas_price * fee-currency-USD-price. fee_currency adapters for USDC (0x2f25…) and USDT (0x0e2a…) are mapped to their underlying token addresses for price lookup; NULL or zero-address fee_currency is priced as native CELO; any other fee_currency is priced directly against its own contract_address in prices.day. Contribution rounds to zero when no matching price row exists for the day (e.g. unindexed token)."
