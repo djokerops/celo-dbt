@@ -12,7 +12,6 @@ WITH attributed_transfers AS (
         DATE_TRUNC('day', block_time) AS day,
         tx_hash,
         COALESCE(NULLIF(builder_code2, ''), builder_code) AS app_code,
-        "from" AS user_address,
         amount_usd
     FROM {{ ref('transfers_attributed') }}
     WHERE builder_code IS NOT NULL
@@ -27,8 +26,7 @@ transfer_metrics AS (
         day,
         app_code AS builder_code,
         SUM(amount_usd)                 AS volume_usd,
-        COUNT(DISTINCT tx_hash)         AS token_transfers_tx,
-        COUNT(DISTINCT user_address)    AS unique_addresses
+        COUNT(DISTINCT tx_hash)         AS token_transfers_tx
     FROM attributed_transfers
     GROUP BY day, app_code
 ),
@@ -38,6 +36,7 @@ attributed_txs AS (
         DATE_TRUNC('day', block_time) AS day,
         hash AS tx_hash,
         COALESCE(NULLIF(builder_code2, ''), builder_code) AS app_code,
+        "from" AS user_address,
         gas_used,
         gas_price,
         fee_currency
@@ -53,7 +52,8 @@ tx_metrics AS (
     SELECT
         day,
         app_code AS builder_code,
-        COUNT(DISTINCT tx_hash) AS tx_count
+        COUNT(DISTINCT tx_hash)      AS tx_count,
+        COUNT(DISTINCT user_address) AS unique_addresses
     FROM attributed_txs
     GROUP BY day, app_code
 ),
@@ -110,7 +110,7 @@ SELECT
     COALESCE(tm.volume_usd, 0)         AS volume_usd,
     txm.tx_count,
     COALESCE(tm.token_transfers_tx, 0) AS token_transfers_tx,
-    COALESCE(tm.unique_addresses, 0)   AS unique_addresses,
+    txm.unique_addresses,
     COALESCE(fm.chain_fees_usd, 0)     AS chain_fees_usd
 FROM tx_metrics txm
 LEFT JOIN transfer_metrics tm
