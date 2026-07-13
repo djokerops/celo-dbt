@@ -37,7 +37,7 @@ WITH transfers AS (
     AND block_time >= timestamp '2026-05-01 23:22:42'
   {% if is_incremental() %}
     AND block_date >= current_date - interval '1' day
-    AND block_time >= now() - interval '6' hour
+    AND block_time >= now() - interval '12' hour
   {% endif %}
 ),
 
@@ -52,7 +52,7 @@ attributed AS (
   WHERE block_date >= date('2026-05-01')
   {% if is_incremental() %}
     AND block_date >= current_date - interval '1' day
-    AND block_time >= now() - interval '6' hour
+    AND block_time >= now() - interval '12' hour
   {% endif %}
 )
 
