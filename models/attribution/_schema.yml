@@ -2,7 +2,7 @@ version: 2
 
 models:
   - name: transactions_attributed
-    description: "Celo transactions enriched with builder-code attribution parsed from the calldata trailer."
+    description: "Celo transactions that carry an ERC-8021 builder-code attribution suffix, with the code parsed out of the calldata trailer. Untagged transactions are excluded; use celo.transactions for the full set (e.g. attribution-rate denominators)."
     data_tests:
       - dbt_utils.unique_combination_of_columns:
           arguments:
@@ -63,7 +63,7 @@ models:
       - name: fee_currency
         description: "Address of the ERC-20 token used to pay gas, if not native CELO."
       - name: has_builder_code
-        description: "True when the calldata trailer matches the attribution marker, schema id 0x00, valid code length, and the calldata is long enough to contain the encoded code. Equivalent to multi_code IS NOT NULL."
+        description: "Always true in this model (untagged transactions are filtered out). Kept for downstream compatibility; equivalent to multi_code IS NOT NULL."
         data_tests:
           - not_null
       - name: multi_code
@@ -74,7 +74,7 @@ models:
         description: "Second comma-delimited segment of multi_code (e.g. 'celo_b057492a' from 'minipay,celo_b057492a'). NULL when multi_code contains only a single code or has_builder_code is false."
 
   - name: transfers_attributed
-    description: "Celo token transfers from tokens.transfers, left-joined to transactions_attributed to attach builder-code attribution at the transfer grain. One row per transfer event; transfers whose parent transaction has no attribution carry has_builder_code = false and builder_code = NULL."
+    description: "Celo token transfers from tokens.transfers whose parent transaction carries a builder code (inner join to transactions_attributed on tx_hash). One row per transfer event. Transfers from untagged transactions are excluded; use tokens.transfers for the full set."
     data_tests:
       - dbt_utils.unique_combination_of_columns:
           arguments:
@@ -139,7 +139,7 @@ models:
       - name: _updated_at
         description: "Timestamp when the source row was last written by Dune."
       - name: has_builder_code
-        description: "True when the parent transaction's calldata trailer carried valid builder-code attribution. Defaults to false when no matching transaction is found in transactions_attributed."
+        description: "Always true in this model (only transfers from tagged transactions are kept). Kept for downstream compatibility."
         data_tests:
           - not_null
       - name: multi_code

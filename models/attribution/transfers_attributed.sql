@@ -79,9 +79,9 @@ SELECT
     t.price_usd,
     t.amount_usd,
     t._updated_at,
-    COALESCE(a.has_builder_code, false)   AS has_builder_code,
+    a.has_builder_code,
     a.multi_code,    
     a.builder_code,                       
     a.builder_code2                      
 FROM transfers AS t
-LEFT JOIN attributed AS a ON t.tx_hash = a.hash
+INNER JOIN attributed AS a ON t.tx_hash = a.hash

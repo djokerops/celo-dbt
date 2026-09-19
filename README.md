@@ -6,8 +6,8 @@ dbt project for Celo builder-code attribution. Reads from Dune's curated Celo ta
 
 | Model | Grain | Source | Purpose |
 | --- | --- | --- | --- |
-| [`transactions_attributed`](models/attribution/transactions_attributed.sql) | one row per transaction | `celo.transactions` | All Celo transactions with calldata long enough to carry an attribution payload (`varbinary_length(data) > 18`), with the builder code parsed out of the trailing bytes. |
-| [`transfers_attributed`](models/attribution/transfers_attributed.sql) | one row per transfer event | `tokens.transfers` (filtered to `blockchain = 'celo'`) LEFT JOIN `transactions_attributed` on `tx_hash` | Celo token transfers with builder-code attribution attached at the transfer grain, so analytics can roll up attribution across token activity. |
+| [`transactions_attributed`](models/attribution/transactions_attributed.sql) | one row per tagged transaction | `celo.transactions` | Only Celo transactions that carry a builder-code suffix, with the code parsed out of the trailing calldata bytes. Untagged transactions are excluded — query `celo.transactions` for the full set. |
+| [`transfers_attributed`](models/attribution/transfers_attributed.sql) | one row per tagged transfer event | `tokens.transfers` (filtered to `blockchain = 'celo'`) INNER JOIN `transactions_attributed` on `tx_hash` | Only Celo token transfers whose parent transaction carries a builder code, with the code attached at the transfer grain. |
 | [`buildercode_daily_metric`](models/attribution/buildercode_daily_metric.sql) | one row per (day, builder_code) | `transfers_attributed` + `celo.transactions` + `prices.day` | Daily aggregates per builder: USD volume, transaction count, unique sender addresses, and chain fees paid (in USD, accounting for non-CELO gas tokens via fee_currency mapping). |
 
 ### How attribution is decoded

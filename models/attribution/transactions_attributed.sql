@@ -99,5 +99,6 @@ SELECT
     split_part(multi_code, ',', 1) AS builder_code,    -- "minipay"
     NULLIF(split_part(multi_code, ',', 2), '') AS builder_code2   -- "celo_b057492a"
 FROM extracted
+WHERE multi_code IS NOT NULL
 
  
