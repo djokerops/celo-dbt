@@ -21,3 +21,13 @@ sources:
     tables:
       - name: day
         description: "Daily aggregated USD prices for tokens across chains. Filter by blockchain and contract_address."
+
+  - name: celo_datasets
+    database: dune
+    schema: celo
+    description: "Hand-maintained reference tables created directly in the Dune celo schema (not produced by this dbt project). NOTE: the source() override in macros/dune_dbt_overrides/source.sql defaults every source to the delta_prod catalog, so call sites for these tables must pass database='dune' explicitly."
+    tables:
+      - name: dataset_agents_at_work_allowlist
+        description: "Allowlist of builder codes accepted into the Agents at Work hackathon. Columns: code, project_name."
+      - name: dataset_agentic_defai_allowlist
+        description: "Allowlist of builder codes accepted into the Agentic DeFAI hackathon. Columns: code, team."

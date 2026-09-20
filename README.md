@@ -8,7 +8,8 @@ dbt project for Celo builder-code attribution. Reads from Dune's curated Celo ta
 | --- | --- | --- | --- |
 | [`transactions_attributed`](models/attribution/transactions_attributed.sql) | one row per tagged transaction | `celo.transactions` | Only Celo transactions that carry a builder-code suffix, with the code parsed out of the trailing calldata bytes. Untagged transactions are excluded — query `celo.transactions` for the full set. |
 | [`transfers_attributed`](models/attribution/transfers_attributed.sql) | one row per tagged transfer event | `tokens.transfers` (filtered to `blockchain = 'celo'`) INNER JOIN `transactions_attributed` on `tx_hash` | Only Celo token transfers whose parent transaction carries a builder code, with the code attached at the transfer grain. |
-| [`buildercode_daily_metric`](models/attribution/buildercode_daily_metric.sql) | one row per (day, builder_code) | `transfers_attributed` + `celo.transactions` + `prices.day` | Daily aggregates per builder: USD volume, transaction count, unique sender addresses, and chain fees paid (in USD, accounting for non-CELO gas tokens via fee_currency mapping). |
+| [`buildercode_daily_metric`](models/attribution/buildercode_daily_metric.sql) | one row per (day, builder_code) | `transactions_attributed` + `transfers_attributed` + `prices.day` | Daily aggregates per builder: transaction count, unique signers, USD volume, transfer-producing transactions, and chain fees paid (in USD, accounting for non-CELO gas tokens via fee_currency mapping). |
+| [`agent_buildercode_daily_metric`](models/attribution/agent_buildercode_daily_metric.sql) | one row per (day, builder_code) | `transactions_attributed` + `transfers_attributed` + `prices.day` + `celo.dataset_*_allowlist` | Same daily aggregates, but restricted to hackathon-format codes (`celo_<12 hex>`) and enriched with cohort and display name from the hand-maintained allowlist tables in Dune. Compound suffixes are exploded so each code is credited. Writes to alias `agent_daily_code_metric`. |
 
 ### How attribution is decoded
 
@@ -29,7 +30,7 @@ The model extracts that trailer, validates the 16-byte marker + schema id + leng
 
 ### Materialization
 
-Both models are `incremental`, strategy `delete+insert`. Source-side lookback is 6 hours inside `is_incremental()` to absorb GitHub Actions cron jitter and Dune source-indexing delay. Historical floor is `2026-05-01` — adjust in the model SQL if you need older data.
+All models are `incremental`, strategy `delete+insert`. The event-grain models (`transactions_attributed`, `transfers_attributed`) use a **12-hour** source-side lookback inside `is_incremental()` to absorb scheduler jitter and Dune source-indexing delay. The daily metric models recompute whole days with a **2-day** lookback, because their grain is `(day, builder_code)` and today's aggregate keeps changing. Historical floor is `2026-05-01` — adjust in the model SQL if you need older data.
 
 ## Getting started locally
 
@@ -164,11 +165,13 @@ If you need true hourly cadence, you need an external scheduler (e.g. a small VM
 
 ```
 models/attribution/
-  transactions_attributed.sql    # parent — parses calldata trailer
-  transfers_attributed.sql       # joins transfers to attribution
-  buildercode_daily_metric.sql   # daily aggregates per builder code
-  _schema.yml                    # column docs + tests for all models
-  _sources.yml                   # celo.transactions, tokens.transfers, prices.day
+  transactions_attributed.sql          # parent — parses calldata trailer
+  transfers_attributed.sql             # joins transfers to attribution
+  buildercode_daily_metric.sql         # daily aggregates per builder code
+  agent_buildercode_daily_metric.sql   # same, scoped to hackathon codes + allowlist
+  _schema.yml                          # column docs + tests for all models
+  _sources.yml                         # celo.transactions, tokens.transfers, prices.day,
+                                       #   celo.dataset_*_allowlist
 macros/dune_dbt_overrides/       # schema naming, post-hooks (DO NOT modify)
 .github/workflows/               # CI/CD (see above)
 profiles.yml                     # Trino/Dune connection (reads env vars)

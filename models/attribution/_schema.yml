@@ -176,3 +176,45 @@ models:
         description: "Distinct user EOAs that originated an attributed transaction for this builder on this day, derived from transactions_attributed.from (the tx signer). Same population as tx_count, so it includes users who did approves, governance writes, or other non-transfer interactions in addition to those who moved value. Counting the tx signer (not the transfer event's from) also avoids the false-positive case where a router contract's address would be counted instead of the actual user when a tx routes through a swap/batch contract."
       - name: chain_fees_usd
         description: "Total gas fees paid in USD across ALL attributed transactions for this builder on this day, regardless of whether the transaction produced a token transfer. Same scope as tx_count, so this is the true cost-per-builder metric (includes approves, reverts, governance writes, and other non-transfer interactions). Computed as gas_used * gas_price * fee-currency-USD-price. fee_currency adapters for USDC (0x2f25…) and USDT (0x0e2a…) are mapped to their underlying token addresses for price lookup; NULL or zero-address fee_currency is priced as native CELO; any other fee_currency is priced directly against its own contract_address in prices.day. Contribution rounds to zero when no matching price row exists for the day (e.g. unindexed token)."
+
+  - name: agent_buildercode_daily_metric
+    description: "Daily metrics per hackathon-format builder code (celo_<12 hex>), enriched with hackathon cohort and display name from the dune.celo allowlist tables. Compound suffixes are exploded, so a transaction carrying several codes contributes to each matching code. Codes not on either allowlist table are kept with hackathon = 'unlisted'. One row per (day, builder_code). Materialized as alias agent_daily_code_metric."
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - day
+              - builder_code
+    columns:
+      - name: day
+        description: "Day bucket (DATE_TRUNC of block_time)."
+        data_tests:
+          - not_null
+      - name: builder_code
+        description: "A single hackathon-format code (celo_<12 hex chars>) extracted from the transaction's comma-separated suffix. Platform codes such as 'minipay' are filtered out by the regex."
+        data_tests:
+          - not_null
+      - name: hackathon
+        description: "Which cohort the code belongs to: 'agents_at_work', 'defai', or 'unlisted' when the code is in neither allowlist table."
+        data_tests:
+          - not_null
+      - name: label
+        description: "Display name from the allowlist (project_name for agents_at_work, team for defai). NULL when the code is unlisted."
+      - name: on_allowlist
+        description: "True when the code appears in either allowlist table."
+        data_tests:
+          - not_null
+      - name: tx_count
+        description: "Distinct tagged transactions carrying this code on this day, from transactions_attributed."
+        data_tests:
+          - not_null
+      - name: unique_addresses
+        description: "Distinct transaction signers (transactions_attributed.from) for this code on this day."
+        data_tests:
+          - not_null
+      - name: volume_usd
+        description: "Sum of amount_usd across token transfers whose parent transaction carried this code. Zero when the code's transactions moved no tokens."
+      - name: token_transfers_tx
+        description: "Distinct transactions carrying this code that produced at least one token transfer. Always <= tx_count."
+      - name: chain_fees_usd
+        description: "Gas fees in USD across all transactions carrying this code, priced via the fee_currency mapping (USDC/USDT adapters mapped to their underlying tokens, NULL or zero-address priced as native CELO, anything else priced against its own contract address)."
