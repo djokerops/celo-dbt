@@ -13,6 +13,9 @@ WITH allowlist AS (                       -- enrichment: which hackathon + displ
     UNION ALL
     SELECT code, 'defai' AS hackathon, team AS label
     FROM {{ source('celo_datasets', 'dataset_agentic_defai_allowlist', database='dune') }}
+    UNION ALL
+    SELECT code, 'A.O. Open Rails' AS hackathon, project_name AS label
+    FROM {{ source('celo_datasets', 'result_agents_on_open_rails_projects', database='dune') }}
 ),
 allow_agg AS (
     SELECT code, arbitrary(hackathon) AS hackathon, arbitrary(label) AS label

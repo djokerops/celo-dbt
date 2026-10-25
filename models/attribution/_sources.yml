@@ -31,3 +31,5 @@ sources:
         description: "Allowlist of builder codes accepted into the Agents at Work hackathon. Columns: code, project_name."
       - name: dataset_agentic_defai_allowlist
         description: "Allowlist of builder codes accepted into the Agentic DeFAI hackathon. Columns: code, team."
+      - name: result_agents_on_open_rails_projects
+        description: "Allowlist of builder codes accepted into the A.O. Open Rails hackathon. Columns: code, project_name. Materialized from Dune query 8996000."
